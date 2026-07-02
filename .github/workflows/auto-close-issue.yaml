@@ -6,7 +6,7 @@ on:
 
 jobs:
   close_issue:
-    runs-on: ubuntu-2404-2core
+    runs-on: ubuntu-latest
     steps:
       - name: Close issue if user does not have write or admin permissions
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0

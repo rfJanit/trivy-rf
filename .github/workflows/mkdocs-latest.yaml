@@ -1,17 +1,21 @@
 name: Deploy the latest documentation
+# Tag-push auto-trigger disabled for the RapidFort fork:
+#   - `mike deploy --push` needs GitHub Pages enabled and a gh-pages branch,
+#     which the fork doesn't have.
+#   - The `trigger-trivy-www-deploy` job uses aquasec-only GitHub App secrets
+#     (ACTIONS_MULTI_WRITE_GH_APP_CLIENT_ID / TRIVY_WORKFLOW_TRIGGER_APP_PRIVATE_KEY).
+# Restore the `push: tags: ['v*']` trigger once you set up GitHub Pages and
+# (optionally) equivalent secrets for a docs-deploy downstream repo.
 on:
   workflow_dispatch:
     inputs:
       version:
         description: Version to be deployed
         required: true
-  push:
-    tags:
-      - "v*"
 jobs:
   deploy:
     name: Deploy the latest documentation
-    runs-on: ubuntu-2404-2core
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout main
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -43,7 +47,7 @@ jobs:
   # This workflow is used to trigger the trivy-www deployment
   trigger-trivy-www-deploy:
     needs: deploy
-    runs-on: ubuntu-2404-2core
+    runs-on: ubuntu-latest
     steps:
       # GITHUB_TOKEN is scoped to the current repository and cannot trigger
       # workflows in other repos — generate a GitHub App installation token instead.
