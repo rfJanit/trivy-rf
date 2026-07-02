@@ -4,13 +4,15 @@ on:
     tags:
       - "v*"
 
-# Publishing to ghcr.io/<owner>/trivy and creating a GitHub Release both need
-# repo-scoped write access. Declaring these here is redundant with the reusable
-# workflow (which also declares them at the job level), but making it explicit
-# at the top level documents intent and future-proofs against accidental drops.
+# A calling workflow can only forward scopes it has itself — any permission not
+# listed here is implicitly `none`, and the reusable workflow will be blocked
+# from requesting more than that. These four must match reusable-release.yaml's
+# job-level permissions block.
 permissions:
-  contents: write
-  packages: write
+  contents: write     # GitHub Release + asset upload
+  packages: write     # GHCR push
+  id-token: write     # OIDC token for build-provenance attestations
+  attestations: write # actions/attest — write attestations to the release
 
 jobs:
   release:
