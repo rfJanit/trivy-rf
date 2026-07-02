@@ -28,11 +28,11 @@ const (
 
 var (
 	// GitHub Container Registry
-	DefaultGHCRRepository = fmt.Sprintf("%s:%d", "ghcr.io/aquasecurity/trivy-db", db.SchemaVersion)
+	DefaultGHCRRepository = fmt.Sprintf("%s:%d", "ghcr.io/rfjanit/trivy-db", db.SchemaVersion)
 	defaultGHCRRepository = lo.Must(name.NewTag(DefaultGHCRRepository))
 
 	// GCR mirror
-	DefaultGCRRepository = fmt.Sprintf("%s:%d", "mirror.gcr.io/aquasec/trivy-db", db.SchemaVersion)
+	DefaultGCRRepository = fmt.Sprintf("%s:%d", "ghcr.io/rfjanit/trivy-db", db.SchemaVersion)
 	defaultGCRRepository = lo.Must(name.NewTag(DefaultGCRRepository))
 
 	Close = db.Close
