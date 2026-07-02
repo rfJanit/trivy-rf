@@ -11,35 +11,24 @@ on:
         default: ''
         required: false
         type: string
-    secrets:
-      DOCKERHUB_USER:
-        required: true
-      DOCKERHUB_TOKEN:
-        required: true
-      ECR_ACCESS_KEY_ID:
-        required: true
-      ECR_SECRET_ACCESS_KEY:
-        required: true
-      GPG_KEY:
-        required: true
-      GPG_PASSPHRASE:
-        required: true
-
-env:
-  GH_USER: "aqua-bot"
+    # No external secrets required for the first release.
+    # If/when you add Docker Hub, ECR, or GPG signing, re-add matching
+    # `secrets:` entries here and pass them from release.yaml.
 
 jobs:
   release:
     name: Release
-    runs-on: ubuntu-2404-4core
+    # ubuntu-2404-4core was upstream aquasec's custom self-hosted runner label.
+    # Your fork has no runner registered under that label, so the job would queue
+    # forever. Use a GitHub-hosted runner instead.
+    runs-on: ubuntu-latest
     env:
       DOCKER_CLI_EXPERIMENTAL: "enabled"
     permissions:
-      id-token: write # For cosign
-      packages: write # For GHCR
-      contents: write # For GoReleaser to create the GitHub Release
-      discussions: write # For GoReleaser to attach the release to a Discussion (discussion_category_name)
-      attestations: write # For build provenance attestations
+      id-token: write     # cosign (via actions/attest OIDC); harmless if unused
+      packages: write     # publish container images to ghcr.io/<owner>/*
+      contents: write     # create the GitHub Release + upload assets
+      attestations: write # actions/attest — attach build provenance to the Release
     steps:
       - name: Cosign install
         uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
@@ -56,25 +45,15 @@ jobs:
           PLATFORMS: ${{ steps.buildx.outputs.platforms }}
         run: echo "${PLATFORMS}"
 
-      - name: Login to docker.io registry
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Login to ghcr.io registry
+        # `github.actor` is the user/bot that pushed the tag; combined with
+        # secrets.GITHUB_TOKEN this is enough to push to ghcr.io/<owner>/*
+        # as long as the workflow declares `permissions: packages: write`.
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: ghcr.io
-          username: ${{ env.GH_USER }}
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Login to ECR
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-        with:
-          registry: public.ecr.aws
-          username: ${{ secrets.ECR_ACCESS_KEY_ID }}
-          password: ${{ secrets.ECR_SECRET_ACCESS_KEY }}
 
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -91,16 +70,10 @@ jobs:
           args: mod -licenses -json -output bom.json
           version: ^v1
 
-      - name: "save gpg key"
-        env:
-          GPG_KEY: ${{ secrets.GPG_KEY }}
-        run: |
-          echo "$GPG_KEY" > gpg.key
-
       # Create tmp dir for GoReleaser
       - name: "create tmp dir"
         run: |
-          mkdir tmp    
+          mkdir tmp
 
       - name: GoReleaser
         id: goreleaser
@@ -109,30 +82,28 @@ jobs:
           version: v2.1.0
           args: release -f=${{ inputs.goreleaser_config}} ${{ inputs.goreleaser_options}}
         env:
+          # GITHUB_TOKEN gives GoReleaser permission to create the GitHub Release
+          # and upload assets. `permissions: contents: write` on the job scopes it.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NFPM_DEFAULT_RPM_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-          GPG_FILE: "gpg.key"
           TMPDIR: "tmp"
+        # NFPM_DEFAULT_RPM_PASSPHRASE / GPG_FILE removed — RPM signing is off in
+        # goreleaser.yml for the first release. Re-add them alongside the
+        # `rpm.signature.key_file` block when a signing key becomes available.
 
-      - name: "remove gpg key"
-        run: |
-          rm gpg.key
-
-      # Push images to registries (only for canary build)
-      # The custom Dockerfile.canary is necessary
-      # because GoReleaser Free doesn't support pushing images with the `--snapshot` flag.
+      # Canary "Build and push" step retargeted at your fork's GHCR only.
+      # Only fires when release.yaml (or canary.yaml) calls this reusable workflow
+      # with goreleaser_config: goreleaser-canary.yml — dormant for normal releases.
+      # Update or remove goreleaser-canary.yml itself if you don't ship canary builds.
       - name: Build and push
         if: ${{ inputs.goreleaser_config == 'goreleaser-canary.yml' }}
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
         with:
           platforms: linux/amd64, linux/arm64
-          file: ./Dockerfile.canary # path to Dockerfile
+          file: ./Dockerfile.canary
           context: .
           push: true
           tags: |
-            aquasec/trivy:canary
-            ghcr.io/aquasecurity/trivy:canary
-            public.ecr.aws/aquasecurity/trivy:canary
+            ghcr.io/rfjanit/trivy:canary
 
       - name: Generate build provenance attestations
         if: ${{ inputs.goreleaser_config != 'goreleaser-canary.yml' }}
