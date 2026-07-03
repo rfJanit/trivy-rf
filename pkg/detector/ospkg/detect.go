@@ -21,7 +21,6 @@ import (
 	"github.com/aquasecurity/trivy/pkg/detector/ospkg/minimos"
 	"github.com/aquasecurity/trivy/pkg/detector/ospkg/oracle"
 	"github.com/aquasecurity/trivy/pkg/detector/ospkg/photon"
-	"github.com/aquasecurity/trivy/pkg/detector/ospkg/rapidfort"
 	"github.com/aquasecurity/trivy/pkg/detector/ospkg/redhat"
 	"github.com/aquasecurity/trivy/pkg/detector/ospkg/rocky"
 	"github.com/aquasecurity/trivy/pkg/detector/ospkg/rootio"
@@ -75,19 +74,12 @@ var (
 		rootio.Provider,
 		seal.Provider,
 	}
-
-	// labelProviders dynamically generate drivers based on image config labels.
-	// They are tried before providers and standard OS-specific drivers.
-	labelProviders = []driver.LabelProvider{
-		rapidfort.Provider,
-	}
 )
 
 // resolver holds the candidate drivers and providers and resolves one for a scan target.
 type resolver struct {
-	drivers        map[ftypes.OSType]driver.Driver
-	providers      []driver.Provider
-	labelProviders []driver.LabelProvider
+	drivers   map[ftypes.OSType]driver.Driver
+	providers []driver.Provider
 }
 
 // Option configures a Detector. Options are provided for extensibility by users
@@ -113,15 +105,14 @@ func WithProvider(provider driver.Provider) Option {
 // NewDetector creates a new Detector for the given scan target
 func NewDetector(target types.ScanTarget, opts ...Option) (*Detector, error) {
 	r := &resolver{
-		drivers:        maps.Clone(drivers),
-		providers:      slices.Clone(providers),
-		labelProviders: slices.Clone(labelProviders),
+		drivers:   maps.Clone(drivers),
+		providers: slices.Clone(providers),
 	}
 	for _, opt := range opts {
 		opt(r)
 	}
 
-	drv, err := r.resolve(target.OS.Family, target.Packages, target.ImageLabels)
+	drv, err := r.resolve(target.OS.Family, target.Packages)
 	if err != nil {
 		return nil, err
 	}
@@ -137,13 +128,8 @@ func (d *Detector) Detect(ctx context.Context) ([]types.DetectedVulnerability, b
 
 	eosl := !d.driver.IsSupportedVersion(ctx, d.target.OS.Family, d.target.OS.Name)
 
-	pkgs := d.target.Packages
-
-	// Skip third-party filtering when the driver explicitly opts in
-	if tp, ok := d.driver.(driver.ThirdPartyAware); !ok || !tp.IncludesThirdParty() {
-		pkgs = filterPkgs(ctx, pkgs)
-	}
-	vulns, err := d.driver.Detect(ctx, d.target.OS.Name, d.target.Repository, pkgs)
+	filteredPkgs := filterPkgs(ctx, d.target.Packages)
+	vulns, err := d.driver.Detect(ctx, d.target.OS.Name, d.target.Repository, filteredPkgs)
 	if err != nil {
 		return nil, false, xerrors.Errorf("failed detection: %w", err)
 	}
@@ -172,22 +158,15 @@ func filterPkgs(ctx context.Context, pkgs []ftypes.Package) []ftypes.Package {
 	return filtered
 }
 
-func (r *resolver) resolve(osFamily ftypes.OSType, pkgs []ftypes.Package, labels map[string]string) (driver.Driver, error) {
-	// Try label-aware providers first (e.g. RapidFort curated image detection)
-	for _, provider := range r.labelProviders {
-		if d := provider(osFamily, pkgs, labels); d != nil {
-			return d, nil
-		}
-	}
-
-	// Try package-pattern providers (e.g. rootio, seal)
+func (r *resolver) resolve(osFamily ftypes.OSType, pkgs []ftypes.Package) (driver.Driver, error) {
+	// Try providers first
 	for _, provider := range r.providers {
 		if d := provider(osFamily, pkgs); d != nil {
 			return d, nil
 		}
 	}
 
-	// Fall back to standard OS-specific drivers
+	// Fall back to standard drivers
 	if d, ok := r.drivers[osFamily]; ok {
 		return d, nil
 	}
