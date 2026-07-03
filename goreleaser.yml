@@ -78,19 +78,17 @@ builds:
 release:
     extra_files:
       - glob: ./bom.json
-    # discussion_category_name intentionally omitted — enable GitHub Discussions
-    # on the fork and set this to a category name (e.g. "Announcements") if you
-    # want each release to auto-post there.
+    discussion_category_name: Development
 
 nfpms:
   -
     formats:
       - deb
       - rpm
-    vendor: "RapidFort"
-    homepage: "https://github.com/rfJanit/trivy-rf"
-    maintainer: "RapidFort"
-    description: "RapidFort's Trivy fork — A Fast Vulnerability Scanner for Containers, extended with RapidFort curated advisories."
+    vendor: "aquasecurity"
+    homepage: "https://github.com/aquasecurity"
+    maintainer: "Aqua Security <oss@aquasec.com>"
+    description: "A Fast Vulnerability Scanner for Containers"
     license: "Apache-2.0"
     file_name_template: >-
       {{ .ProjectName }}_{{ .Version }}_
@@ -109,12 +107,13 @@ nfpms:
     contents:
      - src: contrib/*.tpl
        dst: /usr/local/share/trivy/templates
-    # RPM signing intentionally omitted for the first release.
-    # Add a `rpm.signature.key_file: '{{ .Env.GPG_FILE }}'` block once you have a signing key.
+    rpm:
+      signature:
+         key_file: '{{ .Env.GPG_FILE }}'
 
 archives:
   - id: archive
-    formats: [tar.gz]
+    format: tar.gz
     name_template: >-
       {{ .ProjectName }}_{{ .Version }}_
       {{- if eq .Os "darwin" }}macOS
@@ -136,18 +135,17 @@ archives:
       - contrib/*.tpl
     format_overrides:
       - goos: windows
-        formats: [zip]
+        format: zip
 
 
-# Per-arch container images pushed only to GHCR under the fork's owner.
-# Docker Hub and public.ecr.aws removed for the first release — reintroduce them
-# with the aquasec image_template pattern once you have DOCKERHUB_* / ECR_* secrets.
-# s390x and ppc64le kept from upstream; drop them if you want faster releases and
-# don't care about IBM Z / Power targets.
 dockers:
   - image_templates:
-      - "ghcr.io/rfjanit/trivy:{{ .Version }}-amd64"
-      - "ghcr.io/rfjanit/trivy:latest-amd64"
+      - "docker.io/aquasec/trivy:{{ .Version }}-amd64"
+      - "docker.io/aquasec/trivy:latest-amd64"
+      - "ghcr.io/aquasecurity/trivy:{{ .Version }}-amd64"
+      - "ghcr.io/aquasecurity/trivy:latest-amd64"
+      - "public.ecr.aws/aquasecurity/trivy:latest-amd64"
+      - "public.ecr.aws/aquasecurity/trivy:{{ .Version }}-amd64"
     use: buildx
     goos: linux
     goarch: amd64
@@ -155,19 +153,24 @@ dockers:
       - build-linux
     build_flag_templates:
       - "--label=org.opencontainers.image.title={{ .ProjectName }}"
-      - "--label=org.opencontainers.image.description=RapidFort's Trivy fork with curated advisories"
-      - "--label=org.opencontainers.image.vendor=RapidFort"
+      - "--label=org.opencontainers.image.description=A Fast Vulnerability Scanner for Containers"
+      - "--label=org.opencontainers.image.vendor=Aqua Security"
       - "--label=org.opencontainers.image.version={{ .Version }}"
       - "--label=org.opencontainers.image.created={{ .Date }}"
-      - "--label=org.opencontainers.image.source=https://github.com/rfJanit/trivy-rf"
+      - "--label=org.opencontainers.image.source=https://github.com/aquasecurity/trivy"
       - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-      - "--label=org.opencontainers.image.url=https://github.com/rfJanit/trivy-rf"
+      - "--label=org.opencontainers.image.url=https://www.aquasec.com/products/trivy/"
+      - "--label=org.opencontainers.image.documentation=https://trivy.dev/v{{ .Version }}/"
       - "--platform=linux/amd64"
     extra_files:
     - contrib/
   - image_templates:
-      - "ghcr.io/rfjanit/trivy:{{ .Version }}-arm64"
-      - "ghcr.io/rfjanit/trivy:latest-arm64"
+      - "docker.io/aquasec/trivy:{{ .Version }}-arm64"
+      - "docker.io/aquasec/trivy:latest-arm64"
+      - "ghcr.io/aquasecurity/trivy:{{ .Version }}-arm64"
+      - "ghcr.io/aquasecurity/trivy:latest-arm64"
+      - "public.ecr.aws/aquasecurity/trivy:latest-arm64"
+      - "public.ecr.aws/aquasecurity/trivy:{{ .Version }}-arm64"
     use: buildx
     goos: linux
     goarch: arm64
@@ -175,19 +178,24 @@ dockers:
       - build-linux
     build_flag_templates:
       - "--label=org.opencontainers.image.title={{ .ProjectName }}"
-      - "--label=org.opencontainers.image.description=RapidFort's Trivy fork with curated advisories"
-      - "--label=org.opencontainers.image.vendor=RapidFort"
+      - "--label=org.opencontainers.image.description=A Fast Vulnerability Scanner for Containers"
+      - "--label=org.opencontainers.image.vendor=Aqua Security"
       - "--label=org.opencontainers.image.version={{ .Version }}"
       - "--label=org.opencontainers.image.created={{ .Date }}"
-      - "--label=org.opencontainers.image.source=https://github.com/rfJanit/trivy-rf"
+      - "--label=org.opencontainers.image.source=https://github.com/aquasecurity/trivy"
       - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-      - "--label=org.opencontainers.image.url=https://github.com/rfJanit/trivy-rf"
+      - "--label=org.opencontainers.image.url=https://www.aquasec.com/products/trivy/"
+      - "--label=org.opencontainers.image.documentation=https://trivy.dev/v{{ .Version }}/"
       - "--platform=linux/arm64"
     extra_files:
     - contrib/
   - image_templates:
-      - "ghcr.io/rfjanit/trivy:{{ .Version }}-s390x"
-      - "ghcr.io/rfjanit/trivy:latest-s390x"
+      - "docker.io/aquasec/trivy:{{ .Version }}-s390x"
+      - "docker.io/aquasec/trivy:latest-s390x"
+      - "ghcr.io/aquasecurity/trivy:{{ .Version }}-s390x"
+      - "ghcr.io/aquasecurity/trivy:latest-s390x"
+      - "public.ecr.aws/aquasecurity/trivy:latest-s390x"
+      - "public.ecr.aws/aquasecurity/trivy:{{ .Version }}-s390x"
     use: buildx
     goos: linux
     goarch: s390x
@@ -195,19 +203,24 @@ dockers:
       - build-linux
     build_flag_templates:
       - "--label=org.opencontainers.image.title={{ .ProjectName }}"
-      - "--label=org.opencontainers.image.description=RapidFort's Trivy fork with curated advisories"
-      - "--label=org.opencontainers.image.vendor=RapidFort"
+      - "--label=org.opencontainers.image.description=A Fast Vulnerability Scanner for Containers"
+      - "--label=org.opencontainers.image.vendor=Aqua Security"
       - "--label=org.opencontainers.image.version={{ .Version }}"
       - "--label=org.opencontainers.image.created={{ .Date }}"
-      - "--label=org.opencontainers.image.source=https://github.com/rfJanit/trivy-rf"
+      - "--label=org.opencontainers.image.source=https://github.com/aquasecurity/trivy"
       - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-      - "--label=org.opencontainers.image.url=https://github.com/rfJanit/trivy-rf"
+      - "--label=org.opencontainers.image.url=https://www.aquasec.com/products/trivy/"
+      - "--label=org.opencontainers.image.documentation=https://trivy.dev/v{{ .Version }}/"
       - "--platform=linux/s390x"
     extra_files:
     - contrib/
   - image_templates:
-      - "ghcr.io/rfjanit/trivy:{{ .Version }}-ppc64le"
-      - "ghcr.io/rfjanit/trivy:latest-ppc64le"
+      - "docker.io/aquasec/trivy:{{ .Version }}-ppc64le"
+      - "docker.io/aquasec/trivy:latest-ppc64le"
+      - "ghcr.io/aquasecurity/trivy:{{ .Version }}-ppc64le"
+      - "ghcr.io/aquasecurity/trivy:latest-ppc64le"
+      - "public.ecr.aws/aquasecurity/trivy:latest-ppc64le"
+      - "public.ecr.aws/aquasecurity/trivy:{{ .Version }}-ppc64le"
     use: buildx
     goos: linux
     goarch: ppc64le
@@ -215,49 +228,76 @@ dockers:
       - build-linux
     build_flag_templates:
       - "--label=org.opencontainers.image.title={{ .ProjectName }}"
-      - "--label=org.opencontainers.image.description=RapidFort's Trivy fork with curated advisories"
-      - "--label=org.opencontainers.image.vendor=RapidFort"
+      - "--label=org.opencontainers.image.description=A Fast Vulnerability Scanner for Containers"
+      - "--label=org.opencontainers.image.vendor=Aqua Security"
       - "--label=org.opencontainers.image.version={{ .Version }}"
       - "--label=org.opencontainers.image.created={{ .Date }}"
-      - "--label=org.opencontainers.image.source=https://github.com/rfJanit/trivy-rf"
+      - "--label=org.opencontainers.image.source=https://github.com/aquasecurity/trivy"
       - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-      - "--label=org.opencontainers.image.url=https://github.com/rfJanit/trivy-rf"
+      - "--label=org.opencontainers.image.url=https://www.aquasec.com/products/trivy/"
+      - "--label=org.opencontainers.image.documentation=https://trivy.dev/v{{ .Version }}/"
       - "--platform=linux/ppc64le"
     extra_files:
     - contrib/
 
-# Multi-arch manifests that let `docker pull ghcr.io/rfjanit/trivy:<tag>` resolve to
-# the right per-arch image automatically. GHCR-only for the first release.
 docker_manifests:
-  - name_template: 'ghcr.io/rfjanit/trivy:{{ .Version }}'
+  - name_template: 'aquasec/trivy:{{ .Version }}'
     image_templates:
-    - 'ghcr.io/rfjanit/trivy:{{ .Version }}-amd64'
-    - 'ghcr.io/rfjanit/trivy:{{ .Version }}-arm64'
-    - 'ghcr.io/rfjanit/trivy:{{ .Version }}-s390x'
-    - 'ghcr.io/rfjanit/trivy:{{ .Version }}-ppc64le'
-  - name_template: 'ghcr.io/rfjanit/trivy:latest'
+    - 'aquasec/trivy:{{ .Version }}-amd64'
+    - 'aquasec/trivy:{{ .Version }}-arm64'
+    - 'aquasec/trivy:{{ .Version }}-s390x'
+    - 'aquasec/trivy:{{ .Version }}-ppc64le'
+  - name_template: 'ghcr.io/aquasecurity/trivy:{{ .Version }}'
     image_templates:
-    - 'ghcr.io/rfjanit/trivy:{{ .Version }}-amd64'
-    - 'ghcr.io/rfjanit/trivy:{{ .Version }}-arm64'
-    - 'ghcr.io/rfjanit/trivy:{{ .Version }}-s390x'
-    - 'ghcr.io/rfjanit/trivy:{{ .Version }}-ppc64le'
+    - 'ghcr.io/aquasecurity/trivy:{{ .Version }}-amd64'
+    - 'ghcr.io/aquasecurity/trivy:{{ .Version }}-arm64'
+    - 'ghcr.io/aquasecurity/trivy:{{ .Version }}-s390x'
+    - 'ghcr.io/aquasecurity/trivy:{{ .Version }}-ppc64le'
+  - name_template: 'public.ecr.aws/aquasecurity/trivy:{{ .Version }}'
+    image_templates:
+    - 'public.ecr.aws/aquasecurity/trivy:{{ .Version }}-amd64'
+    - 'public.ecr.aws/aquasecurity/trivy:{{ .Version }}-arm64'
+    - 'public.ecr.aws/aquasecurity/trivy:{{ .Version }}-s390x'
+    - 'public.ecr.aws/aquasecurity/trivy:{{ .Version }}-ppc64le'
+  - name_template: 'aquasec/trivy:latest'
+    image_templates:
+    - 'aquasec/trivy:{{ .Version }}-amd64'
+    - 'aquasec/trivy:{{ .Version }}-arm64'
+    - 'aquasec/trivy:{{ .Version }}-s390x'
+    - 'aquasec/trivy:{{ .Version }}-ppc64le'
+  - name_template: 'ghcr.io/aquasecurity/trivy:latest'
+    image_templates:
+    - 'ghcr.io/aquasecurity/trivy:{{ .Version }}-amd64'
+    - 'ghcr.io/aquasecurity/trivy:{{ .Version }}-arm64'
+    - 'ghcr.io/aquasecurity/trivy:{{ .Version }}-s390x'
+    - 'ghcr.io/aquasecurity/trivy:{{ .Version }}-ppc64le'
+  - name_template: 'public.ecr.aws/aquasecurity/trivy:latest'
+    image_templates:
+    - 'public.ecr.aws/aquasecurity/trivy:{{ .Version }}-amd64'
+    - 'public.ecr.aws/aquasecurity/trivy:{{ .Version }}-arm64'
+    - 'public.ecr.aws/aquasecurity/trivy:{{ .Version }}-s390x'
+    - 'public.ecr.aws/aquasecurity/trivy:{{ .Version }}-ppc64le'
 
-# Cosign signing (blob + container) intentionally omitted for the first release.
-# When you're ready to sign, uncomment and re-add:
-#
-# signs:
-#   - cmd: cosign
-#     env: [COSIGN_EXPERIMENTAL=1]
-#     signature: "${artifact}.sigstore.json"
-#     args: ["sign-blob", "--bundle=${signature}", "${artifact}", "--yes"]
-#     artifacts: all
-#     output: true
-# docker_signs:
-#   - cmd: cosign
-#     env: [COSIGN_EXPERIMENTAL=1]
-#     artifacts: manifests
-#     args: ["sign", "${artifact}", "--yes"]
-#     output: true
-#
-# Signing from GitHub Actions requires `id-token: write` permission on the workflow
-# so cosign can obtain an OIDC token — otherwise `sign-blob` fails with a Sigstore error.
+signs:
+- cmd: cosign
+  env:
+  - COSIGN_EXPERIMENTAL=1
+  signature: "${artifact}.sigstore.json"
+  args:
+    - "sign-blob"
+    - "--bundle=${signature}"
+    - "${artifact}"
+    - "--yes"
+  artifacts: all
+  output: true
+
+docker_signs:
+- cmd: cosign
+  env:
+  - COSIGN_EXPERIMENTAL=1
+  artifacts: manifests
+  output: true
+  args:
+  - 'sign'
+  - '${artifact}'
+  - '--yes'
