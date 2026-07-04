@@ -14,7 +14,7 @@ on:
 
 jobs:
   release-please:
-    runs-on: ubuntu-2404-2core
+    runs-on: ubuntu-latest
     if: ${{ !startsWith(github.event.head_commit.message, 'release:') && !github.event.inputs.version }}
     steps:
       # GITHUB_TOKEN cannot trigger workflows on PRs it creates, so the release PR
@@ -36,7 +36,7 @@ jobs:
           target-branch: ${{ github.ref_name }}
 
   manual-release-please:
-    runs-on: ubuntu-2404-2core
+    runs-on: ubuntu-latest
     if: ${{ github.event.inputs.version }}
     steps:
       # GITHUB_TOKEN cannot trigger workflows on PRs it creates, so the release PR
@@ -64,7 +64,7 @@ jobs:
             --target-branch="$GITHUB_REF_NAME"
 
   release-tag:
-    runs-on: ubuntu-2404-2core
+    runs-on: ubuntu-latest
     if: ${{ startsWith(github.event.head_commit.message, 'release:') }}
     steps:
       # Since skip-github-release is specified, the outputs of googleapis/release-please-action cannot be used.

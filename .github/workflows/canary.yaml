@@ -28,7 +28,7 @@ jobs:
   upload-binaries:
     name: Upload binaries
     needs: build-binaries # run this job after 'build-binaries' job completes
-    runs-on: ubuntu-2404-2core
+    runs-on: ubuntu-latest
     permissions:
       actions: write # Required to delete caches
     steps:

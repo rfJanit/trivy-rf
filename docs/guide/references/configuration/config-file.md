@@ -119,8 +119,8 @@ db:
 
   # Same as '--db-repository'
   repository:
-   - mirror.gcr.io/aquasec/trivy-db:2
-   - ghcr.io/aquasecurity/trivy-db:2
+   - ghcr.io/rfjanit/trivy-db:2
+   - ghcr.io/rfjanit/trivy-db:2
 
   # Same as '--skip-db-update'
   skip-update: false

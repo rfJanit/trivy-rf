@@ -59,7 +59,7 @@ jobs:
     if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     needs:
       - test-chart
-    runs-on: ubuntu-2404-2core
+    runs-on: ubuntu-latest
     steps:
       # GITHUB_TOKEN is scoped to the current repository and cannot trigger
       # workflows in other repos — generate a GitHub App installation token instead.
